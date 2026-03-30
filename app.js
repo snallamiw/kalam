@@ -1,5 +1,5 @@
 // ── Constants ────────────────────────────────────────────────
-const DURATIONS = [1, 3, 5, 10, 15, 20, 25, 30, 45, 60]; // minutes
+const DURATIONS = [0.5, 1, 3, 5, 10, 15, 20, 25, 30, 45, 60]; // minutes (0.5 = 30 seconds)
 const SHORT_BREAK_MIN = 5;
 const LONG_BREAK_MIN  = 15;
 const POMODOROS_BEFORE_LONG = 4;
@@ -282,8 +282,8 @@ function renderDurationPicker() {
     const btn = document.createElement('button');
     btn.className = 'duration-btn';
     btn.dataset.minutes = min;
-    btn.textContent = `${min}m`;
-    btn.setAttribute('aria-label', `Set work interval to ${min} minutes`);
+    btn.textContent = min < 1 ? `${min * 60}s` : `${min}m`;
+    btn.setAttribute('aria-label', min < 1 ? `Set work interval to ${min * 60} seconds` : `Set work interval to ${min} minutes`);
     btn.setAttribute('aria-pressed', String(min === state.workDuration));
 
     btn.addEventListener('click', () => {

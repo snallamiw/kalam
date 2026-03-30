@@ -3,7 +3,7 @@
   --clr-bg:           #1a1a2e;
   --clr-surface:      #16213e;
   --clr-surface-2:    #0f3460;
-  --clr-accent:       #e94560;   /* work */
+  --clr-accent:       #22c55e;   /* work */
   --clr-accent-break: #0f9b8e;   /* short break */
   --clr-accent-long:  #f5a623;   /* long break */
   --clr-text:         #eaeaea;
@@ -11,7 +11,7 @@
   --clr-ring-track:   #2a2a4a;
 
   /* Updated by JS on session change */
-  --session-color: #e94560;
+  --session-color: #22c55e;
 
   --font-mono: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
   --font-ui:   system-ui, -apple-system, BlinkMacSystemFont, sans-serif;

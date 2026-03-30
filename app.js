@@ -8,7 +8,7 @@ const STORAGE_KEY      = 'pomodoro-work-duration';
 const TUNE_STORAGE_KEY = 'pomodoro-tune';
 
 const SESSION_COLORS = {
-  work:          '#e94560',
+  work:          '#22c55e',
   'short-break': '#0f9b8e',
   'long-break':  '#f5a623',
 };

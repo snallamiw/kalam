@@ -338,22 +338,19 @@ async function sendNotification(sessionType) {
 
   try {
     if ('serviceWorker' in navigator) {
-      // Use serviceWorker.ready — always resolves to the active registration,
-      // unlike .controller which is null on first page load
+      // Wait for the active SW — .controller is null on first load,
+      // reg.active is always available once ready resolves
       const reg = await navigator.serviceWorker.ready;
-      await reg.showNotification(msg.title, {
-        body:              msg.body,
-        icon:              './icons/icon-192.png',
-        badge:             './icons/icon-192.png',
-        tag:               'pomodoro-timer',
-        renotify:          true,
-        requireInteraction: false,
-      });
+      const sw  = navigator.serviceWorker.controller || reg.active;
+      if (sw) {
+        // postMessage into the SW so it calls self.registration.showNotification()
+        // iOS PWA requires notifications to originate from the service worker
+        sw.postMessage({ type: 'SHOW_NOTIFICATION', payload: msg });
+      }
     } else {
       new Notification(msg.title, { body: msg.body, icon: './icons/icon-192.png' });
     }
   } catch {
-    // Fallback if SW registration fails
     try { new Notification(msg.title, { body: msg.body }); } catch { /* silent */ }
   }
 }

@@ -1,5 +1,5 @@
 // ── Constants ────────────────────────────────────────────────
-const DURATIONS = [5, 10, 15, 20, 25, 30, 45, 60]; // minutes
+const DURATIONS = [1, 3, 5, 10, 15, 20, 25, 30, 45, 60]; // minutes
 const SHORT_BREAK_MIN = 5;
 const LONG_BREAK_MIN  = 15;
 const POMODOROS_BEFORE_LONG = 4;

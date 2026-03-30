@@ -4,7 +4,8 @@ const SHORT_BREAK_MIN = 5;
 const LONG_BREAK_MIN  = 15;
 const POMODOROS_BEFORE_LONG = 4;
 const CIRCUMFERENCE = 2 * Math.PI * 96; // matches SVG r="96" → 603.186
-const STORAGE_KEY   = 'pomodoro-work-duration';
+const STORAGE_KEY      = 'pomodoro-work-duration';
+const TUNE_STORAGE_KEY = 'pomodoro-tune';
 
 const SESSION_COLORS = {
   work:          '#e94560',
@@ -28,6 +29,7 @@ const NOTIFICATION_MESSAGES = {
 // ── State ────────────────────────────────────────────────────
 const state = {
   workDuration:     25,        // minutes (user-selected, persisted)
+  tune:             'chime',   // selected notification tune, persisted
   currentSession:   'work',    // 'work' | 'short-break' | 'long-break'
   pomodoroCount:    0,         // completed work sessions this cycle
   totalSeconds:     25 * 60,
@@ -49,6 +51,7 @@ const els = {
   btnReset:      document.getElementById('btn-reset'),
   btnSkip:       document.getElementById('btn-skip'),
   durationPicker:document.getElementById('duration-picker'),
+  tunePicker:    document.getElementById('tune-picker'),
   btnNotify:     document.getElementById('btn-notify-enable'),
   iosHint:       document.getElementById('ios-install-hint'),
   iosHintClose:  document.getElementById('ios-hint-close'),
@@ -192,31 +195,93 @@ function transitionTo(session) {
   render();
 }
 
-// ── Audio chime ──────────────────────────────────────────────
-// Plays a short chime using Web Audio API — no permission needed,
-// works even when the app is in the foreground.
+// ── Audio tunes ──────────────────────────────────────────────
+// All tunes use Web Audio API — no files, no permission needed.
 
-function playChime() {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const notes = [880, 1100, 1320]; // A5 C#6 E6 — a bright ascending triad
-    notes.forEach((freq, i) => {
-      const osc  = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = 'sine';
-      osc.frequency.value = freq;
-      const start = ctx.currentTime + i * 0.18;
-      gain.gain.setValueAtTime(0, start);
-      gain.gain.linearRampToValueAtTime(0.4, start + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.6);
-      osc.start(start);
-      osc.stop(start + 0.65);
-    });
-  } catch {
-    // AudioContext not available — silent fail
-  }
+function audioCtx() {
+  return new (window.AudioContext || window.webkitAudioContext)();
+}
+
+function note(ctx, freq, type, start, duration, volume = 0.4) {
+  const osc  = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.type = type;
+  osc.frequency.value = freq;
+  gain.gain.setValueAtTime(0, start);
+  gain.gain.linearRampToValueAtTime(volume, start + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.001, start + duration);
+  osc.start(start);
+  osc.stop(start + duration + 0.05);
+}
+
+const TUNES = {
+  chime: {
+    label: 'Chime',
+    play() {
+      try {
+        const ctx = audioCtx();
+        [880, 1108, 1320].forEach((freq, i) =>   // A5 C#6 E6
+          note(ctx, freq, 'sine', ctx.currentTime + i * 0.18, 0.7));
+      } catch { /* silent */ }
+    },
+  },
+  bell: {
+    label: 'Bell',
+    play() {
+      try {
+        const ctx = audioCtx();
+        const t = ctx.currentTime;
+        note(ctx, 830,  'sine',     t,       1.8, 0.35);
+        note(ctx, 1660, 'sine',     t,       1.2, 0.15); // 2nd harmonic
+        note(ctx, 2490, 'sine',     t,       0.8, 0.07); // 3rd harmonic
+      } catch { /* silent */ }
+    },
+  },
+  ding: {
+    label: 'Ding',
+    play() {
+      try {
+        const ctx = audioCtx();
+        note(ctx, 1500, 'sine', ctx.currentTime, 0.5, 0.5);
+      } catch { /* silent */ }
+    },
+  },
+  beep: {
+    label: 'Beep',
+    play() {
+      try {
+        const ctx = audioCtx();
+        [0, 0.3].forEach(offset =>
+          note(ctx, 880, 'square', ctx.currentTime + offset, 0.2, 0.2));
+      } catch { /* silent */ }
+    },
+  },
+  soft: {
+    label: 'Soft',
+    play() {
+      try {
+        const ctx = audioCtx();
+        const osc  = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(440, ctx.currentTime);
+        osc.frequency.linearRampToValueAtTime(660, ctx.currentTime + 0.4);
+        gain.gain.setValueAtTime(0, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 0.2);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.2);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 1.3);
+      } catch { /* silent */ }
+    },
+  },
+};
+
+function playTune() {
+  (TUNES[state.tune] || TUNES.chime).play();
 }
 
 // ── Notifications ────────────────────────────────────────────
@@ -231,7 +296,7 @@ async function requestNotificationPermission() {
 
   if (permission === 'granted') {
     syncNotifyButton();
-    playChime();
+    playTune();
     sendNotification('test');
   } else if (permission === 'denied') {
     syncNotifyButton();
@@ -266,7 +331,7 @@ async function sendNotification(sessionType) {
   if (!msg) return;
 
   // Always play audio — works in foreground, no permission needed
-  if (sessionType !== 'test') playChime();
+  if (sessionType !== 'test') playTune();
 
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
 
@@ -340,6 +405,32 @@ function renderDurationPicker() {
   });
 }
 
+// ── Tune picker ──────────────────────────────────────────────
+
+function renderTunePicker() {
+  els.tunePicker.innerHTML = '';
+  Object.entries(TUNES).forEach(([key, tune]) => {
+    const btn = document.createElement('button');
+    btn.className = 'duration-btn' + (key === state.tune ? ' active' : '');
+    btn.dataset.tune = key;
+    btn.textContent = tune.label;
+    btn.setAttribute('aria-label', `Set notification sound to ${tune.label}`);
+    btn.setAttribute('aria-pressed', String(key === state.tune));
+
+    btn.addEventListener('click', () => {
+      state.tune = key;
+      saveTunePreference();
+      tune.play(); // preview on selection
+      document.querySelectorAll('#tune-picker .duration-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.tune === key);
+        b.setAttribute('aria-pressed', String(b.dataset.tune === key));
+      });
+    });
+
+    els.tunePicker.appendChild(btn);
+  });
+}
+
 // ── Preferences ──────────────────────────────────────────────
 
 function loadPreferences() {
@@ -349,10 +440,18 @@ function loadPreferences() {
     state.totalSeconds    = state.workDuration * 60;
     state.remainingSeconds = state.workDuration * 60;
   }
+  const savedTune = localStorage.getItem(TUNE_STORAGE_KEY);
+  if (savedTune && savedTune in TUNES) {
+    state.tune = savedTune;
+  }
 }
 
 function savePreferences() {
   localStorage.setItem(STORAGE_KEY, state.workDuration);
+}
+
+function saveTunePreference() {
+  localStorage.setItem(TUNE_STORAGE_KEY, state.tune);
 }
 
 // ── Toast ────────────────────────────────────────────────────
@@ -448,6 +547,7 @@ function init() {
   registerServiceWorker();
   checkIOSInstallHint();
   renderDurationPicker();
+  renderTunePicker();
 
   // Set initial session color
   document.documentElement.style.setProperty(

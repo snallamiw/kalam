@@ -1,0 +1,462 @@
+/* ── Design tokens ──────────────────────────────────────────── */
+:root {
+  --clr-bg:           #1a1a2e;
+  --clr-surface:      #16213e;
+  --clr-surface-2:    #0f3460;
+  --clr-accent:       #e94560;   /* work */
+  --clr-accent-break: #0f9b8e;   /* short break */
+  --clr-accent-long:  #f5a623;   /* long break */
+  --clr-text:         #eaeaea;
+  --clr-muted:        #8892a4;
+  --clr-ring-track:   #2a2a4a;
+
+  /* Updated by JS on session change */
+  --session-color: #e94560;
+
+  --font-mono: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+  --font-ui:   system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+
+  --radius-sm: 8px;
+  --radius:    16px;
+  --radius-lg: 24px;
+  --transition: 0.3s ease;
+}
+
+/* ── Reset ──────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ── Base ───────────────────────────────────────────────────── */
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-ui);
+  background-color: var(--clr-bg);
+  color: var(--clr-text);
+
+  /* Grid: header / timer (grows) / controls / settings */
+  display: grid;
+  grid-template-rows: auto 1fr auto auto;
+  min-height: 100vh;
+  min-height: 100dvh;  /* dynamic viewport — correct on mobile Safari */
+
+  /* Safe area insets for notch / Dynamic Island / home indicator */
+  padding-top:    max(16px, env(safe-area-inset-top));
+  padding-right:  max(16px, env(safe-area-inset-right));
+  padding-bottom: max(20px, env(safe-area-inset-bottom));
+  padding-left:   max(16px, env(safe-area-inset-left));
+
+  gap: 8px;
+  overflow: hidden;
+}
+
+/* ── Header ─────────────────────────────────────────────────── */
+header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0 4px;
+}
+
+#session-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--session-color);
+  transition: color var(--transition);
+}
+
+#session-dots {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.session-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 2px solid var(--clr-muted);
+  background: transparent;
+  transition: background var(--transition), border-color var(--transition);
+}
+
+.session-dot.filled {
+  background: var(--session-color);
+  border-color: var(--session-color);
+}
+
+/* ── Main (timer ring) ──────────────────────────────────────── */
+main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 0;
+}
+
+.ring-wrapper {
+  position: relative;
+  width: min(280px, 72vw);
+  aspect-ratio: 1;
+}
+
+#progress-ring {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+
+.ring-track {
+  fill: none;
+  stroke: var(--clr-ring-track);
+  stroke-width: 10;
+}
+
+.ring-progress {
+  fill: none;
+  stroke: var(--session-color);
+  stroke-width: 10;
+  stroke-linecap: round;
+  /* Circumference = 2 * π * 96 = 603.186 */
+  stroke-dasharray: 603.186;
+  stroke-dashoffset: 0;
+  /* Start at 12 o'clock */
+  transform: rotate(-90deg);
+  transform-origin: center;
+  transform-box: fill-box;
+  transition:
+    stroke-dashoffset 1s linear,
+    stroke var(--transition);
+}
+
+/* Countdown overlay — centered over SVG */
+.timer-display {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  pointer-events: none;
+  user-select: none;
+}
+
+.timer-display span {
+  font-family: var(--font-mono);
+  font-size: clamp(2.8rem, 12vw, 4.5rem);
+  font-weight: 600;
+  line-height: 1;
+  color: var(--clr-text);
+  letter-spacing: -0.02em;
+}
+
+.timer-colon {
+  padding: 0 2px;
+  margin-top: -4px;  /* optical alignment */
+  opacity: 0.7;
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 0.7; }
+  50%       { opacity: 0.2; }
+}
+
+/* Pause the colon blink when running */
+body.paused .timer-colon {
+  animation: none;
+  opacity: 0.3;
+}
+
+/* ── Controls ───────────────────────────────────────────────── */
+#controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 8px 0;
+}
+
+.ctrl-btn {
+  border: none;
+  cursor: pointer;
+  transition: transform var(--transition), opacity var(--transition);
+  -webkit-tap-highlight-color: transparent;
+  background: transparent;
+}
+
+.ctrl-btn:active {
+  transform: scale(0.92);
+}
+
+/* Icon buttons (reset / skip) */
+.icon-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--clr-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--clr-muted);
+  transition:
+    color var(--transition),
+    background var(--transition),
+    transform var(--transition);
+}
+
+.icon-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.icon-btn:hover,
+.icon-btn:focus-visible {
+  color: var(--clr-text);
+  background: var(--clr-surface-2);
+}
+
+/* Primary Start/Pause button */
+.primary-btn {
+  min-width: 120px;
+  height: 52px;
+  border-radius: 999px;
+  background: var(--session-color);
+  color: #fff;
+  font-family: var(--font-ui);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 0 28px;
+  transition:
+    background var(--transition),
+    filter var(--transition),
+    transform var(--transition);
+  box-shadow: 0 4px 20px color-mix(in srgb, var(--session-color) 45%, transparent);
+}
+
+.primary-btn:hover,
+.primary-btn:focus-visible {
+  filter: brightness(1.1);
+}
+
+.primary-btn:active {
+  transform: scale(0.95);
+  filter: brightness(0.95);
+}
+
+/* ── Settings ───────────────────────────────────────────────── */
+#settings {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0 4px;
+}
+
+.settings-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--clr-muted);
+}
+
+#duration-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  padding: 0 8px;
+}
+
+.duration-btn {
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 2px solid var(--clr-surface-2);
+  background: transparent;
+  color: var(--clr-muted);
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    color var(--transition),
+    border-color var(--transition),
+    background var(--transition);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.duration-btn:hover,
+.duration-btn:focus-visible {
+  border-color: var(--session-color);
+  color: var(--clr-text);
+}
+
+.duration-btn.active {
+  border-color: var(--session-color);
+  background: var(--session-color);
+  color: #fff;
+}
+
+.duration-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Notify button */
+.notify-btn {
+  padding: 8px 20px;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--clr-surface-2);
+  background: transparent;
+  color: var(--clr-muted);
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    color var(--transition),
+    border-color var(--transition),
+    background var(--transition);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.notify-btn:hover,
+.notify-btn:focus-visible {
+  border-color: var(--session-color);
+  color: var(--clr-text);
+}
+
+.notify-btn.active {
+  border-color: var(--clr-accent-break);
+  color: var(--clr-accent-break);
+}
+
+.notify-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* ── iOS install hint ───────────────────────────────────────── */
+#ios-install-hint {
+  position: fixed;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  left: 16px;
+  right: 16px;
+  background: var(--clr-surface-2);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  z-index: 100;
+}
+
+#ios-install-hint[hidden] {
+  display: none;
+}
+
+.hint-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.hint-icon {
+  font-size: 1.5rem;
+  color: var(--session-color);
+  flex-shrink: 0;
+}
+
+.hint-content p {
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--clr-muted);
+}
+
+.hint-content strong {
+  color: var(--clr-text);
+}
+
+#ios-hint-close {
+  background: transparent;
+  border: none;
+  color: var(--clr-muted);
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 4px;
+  flex-shrink: 0;
+  line-height: 1;
+  transition: color var(--transition);
+}
+
+#ios-hint-close:hover {
+  color: var(--clr-text);
+}
+
+/* ── Toast notifications ────────────────────────────────────── */
+.toast {
+  position: fixed;
+  bottom: max(80px, calc(env(safe-area-inset-bottom) + 80px));
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--clr-surface-2);
+  color: var(--clr-text);
+  padding: 10px 20px;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  z-index: 200;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+}
+
+.toast.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ── Focus styles (accessibility) ───────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--session-color);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* ── Landscape adjustment ───────────────────────────────────── */
+@media (orientation: landscape) and (max-height: 500px) {
+  body {
+    grid-template-rows: auto auto auto;
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "header  ring"
+      "controls ring"
+      "settings ring";
+    align-items: center;
+  }
+
+  header  { grid-area: header;   }
+  main    { grid-area: ring;     }
+  #controls { grid-area: controls; }
+  #settings { grid-area: settings; }
+
+  .ring-wrapper {
+    width: min(260px, 55vh);
+  }
+}

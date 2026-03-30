@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Generate Pomodoro Icons</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: #1a1a2e;
+      color: #eaeaea;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+      padding: 40px 20px;
+      min-height: 100vh;
+    }
+    h1 { font-size: 1.4rem; }
+    p  { color: #8892a4; font-size: 0.9rem; text-align: center; max-width: 480px; line-height: 1.6; }
+    .previews { display: flex; gap: 24px; align-items: flex-end; flex-wrap: wrap; justify-content: center; }
+    .preview-item { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    .preview-item span { font-size: 0.75rem; color: #8892a4; }
+    canvas { border-radius: 16px; }
+    .btn {
+      padding: 12px 28px;
+      border-radius: 999px;
+      border: none;
+      background: #e94560;
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: filter 0.2s;
+    }
+    .btn:hover { filter: brightness(1.1); }
+    .instructions {
+      background: #16213e;
+      border: 1px solid #2a2a4a;
+      border-radius: 12px;
+      padding: 16px 24px;
+      font-size: 0.85rem;
+      line-height: 1.7;
+      max-width: 480px;
+      color: #8892a4;
+    }
+    .instructions strong { color: #eaeaea; }
+    code {
+      background: #0f3460;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Pomodoro Icon Generator</h1>
+  <p>Click the button to generate all required icon PNGs and save them to the <code>icons/</code> folder.</p>
+
+  <div class="previews" id="previews"></div>
+
+  <button class="btn" id="generate-btn">Generate &amp; Download All Icons</button>
+
+  <div class="instructions">
+    <strong>After downloading:</strong><br>
+    Move the downloaded files to <code>pwa-pomodoro/icons/</code>:<br>
+    &bull; <code>icon-192.png</code> → <code>icons/icon-192.png</code><br>
+    &bull; <code>icon-512.png</code> → <code>icons/icon-512.png</code><br>
+    &bull; <code>apple-touch-icon.png</code> → <code>icons/apple-touch-icon.png</code>
+  </div>
+
+  <script>
+    // Draw the tomato icon onto a canvas at any size
+    function drawIcon(canvas, size) {
+      const ctx = canvas.getContext('2d');
+      canvas.width  = size;
+      canvas.height = size;
+
+      const s = size / 100; // scale factor (design is in 0-100 space)
+
+      // Background
+      ctx.fillStyle = '#1a1a2e';
+      ctx.beginPath();
+      roundRect(ctx, 0, 0, size, size, size * 0.2);
+      ctx.fill();
+
+      // Tomato body
+      ctx.fillStyle = '#e94560';
+      ctx.beginPath();
+      ctx.arc(50 * s, 60 * s, 30 * s, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Stem
+      ctx.fillStyle = '#2d8a4e';
+      ctx.beginPath();
+      ctx.moveTo(50 * s, 30 * s);
+      ctx.bezierCurveTo(46 * s, 20 * s, 38 * s, 22 * s, 38 * s, 22 * s);
+      ctx.bezierCurveTo(43 * s, 28 * s, 50 * s, 30 * s, 50 * s, 30 * s);
+      ctx.bezierCurveTo(50 * s, 30 * s, 57 * s, 28 * s, 62 * s, 22 * s);
+      ctx.bezierCurveTo(62 * s, 22 * s, 54 * s, 20 * s, 50 * s, 30 * s);
+      ctx.closePath();
+      ctx.fill();
+
+      // Leaf left
+      ctx.fillStyle = '#3aad62';
+      ctx.beginPath();
+      ctx.moveTo(44 * s, 28 * s);
+      ctx.bezierCurveTo(36 * s, 24 * s, 34 * s, 30 * s, 34 * s, 30 * s);
+      ctx.bezierCurveTo(40 * s, 32 * s, 44 * s, 28 * s, 44 * s, 28 * s);
+      ctx.fill();
+
+      // Leaf right
+      ctx.beginPath();
+      ctx.moveTo(56 * s, 28 * s);
+      ctx.bezierCurveTo(64 * s, 24 * s, 66 * s, 30 * s, 66 * s, 30 * s);
+      ctx.bezierCurveTo(60 * s, 32 * s, 56 * s, 28 * s, 56 * s, 28 * s);
+      ctx.fill();
+
+      // Highlight
+      ctx.save();
+      ctx.translate(41 * s, 52 * s);
+      ctx.rotate(-30 * Math.PI / 180);
+      ctx.fillStyle = 'rgba(255,255,255,0.22)';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 7 * s, 4.5 * s, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // Polyfill for roundRect (Safari < 15.4)
+    function roundRect(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    }
+
+    // Draw apple-touch-icon: solid background, no rounded corners
+    // (iOS clips it to a rounded square automatically)
+    function drawAppleIcon(canvas) {
+      const size = 180;
+      const ctx = canvas.getContext('2d');
+      canvas.width  = size;
+      canvas.height = size;
+
+      // Solid background (no alpha — iOS fills transparency with black)
+      ctx.fillStyle = '#1a1a2e';
+      ctx.fillRect(0, 0, size, size);
+
+      // Scale the tomato slightly larger for apple-touch-icon
+      const s = size / 100;
+
+      ctx.fillStyle = '#e94560';
+      ctx.beginPath();
+      ctx.arc(50 * s, 60 * s, 30 * s, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#2d8a4e';
+      ctx.beginPath();
+      ctx.moveTo(50 * s, 30 * s);
+      ctx.bezierCurveTo(46 * s, 20 * s, 38 * s, 22 * s, 38 * s, 22 * s);
+      ctx.bezierCurveTo(43 * s, 28 * s, 50 * s, 30 * s, 50 * s, 30 * s);
+      ctx.bezierCurveTo(50 * s, 30 * s, 57 * s, 28 * s, 62 * s, 22 * s);
+      ctx.bezierCurveTo(62 * s, 22 * s, 54 * s, 20 * s, 50 * s, 30 * s);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = '#3aad62';
+      ctx.beginPath();
+      ctx.moveTo(44 * s, 28 * s);
+      ctx.bezierCurveTo(36 * s, 24 * s, 34 * s, 30 * s, 34 * s, 30 * s);
+      ctx.bezierCurveTo(40 * s, 32 * s, 44 * s, 28 * s, 44 * s, 28 * s);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(56 * s, 28 * s);
+      ctx.bezierCurveTo(64 * s, 24 * s, 66 * s, 30 * s, 66 * s, 30 * s);
+      ctx.bezierCurveTo(60 * s, 32 * s, 56 * s, 28 * s, 56 * s, 28 * s);
+      ctx.fill();
+
+      ctx.save();
+      ctx.translate(41 * s, 52 * s);
+      ctx.rotate(-30 * Math.PI / 180);
+      ctx.fillStyle = 'rgba(255,255,255,0.22)';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 7 * s, 4.5 * s, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    const icons = [
+      { name: 'icon-192.png',       size: 192, fn: (c) => drawIcon(c, 192) },
+      { name: 'icon-512.png',       size: 512, fn: (c) => drawIcon(c, 512) },
+      { name: 'apple-touch-icon.png', size: 180, fn: drawAppleIcon },
+    ];
+
+    // Render previews on load
+    const previewsEl = document.getElementById('previews');
+    icons.forEach(icon => {
+      const canvas = document.createElement('canvas');
+      const displaySize = Math.min(icon.size, 96);
+      icon.fn(canvas);
+
+      const scaled = document.createElement('canvas');
+      scaled.width  = displaySize;
+      scaled.height = displaySize;
+      scaled.getContext('2d').drawImage(canvas, 0, 0, displaySize, displaySize);
+
+      const item = document.createElement('div');
+      item.className = 'preview-item';
+      item.appendChild(scaled);
+      item.appendChild(Object.assign(document.createElement('span'), {
+        textContent: `${icon.name} (${icon.size}×${icon.size})`
+      }));
+      previewsEl.appendChild(item);
+    });
+
+    // Download all on button click
+    document.getElementById('generate-btn').addEventListener('click', () => {
+      icons.forEach(icon => {
+        const canvas = document.createElement('canvas');
+        icon.fn(canvas);
+        const link = document.createElement('a');
+        link.download = icon.name;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      });
+    });
+  </script>
+</body>
+</html>

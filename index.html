@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+  <!-- PWA / installability -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#e94560">
+
+  <!-- iOS PWA support -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Pomodoro">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+
+  <title>Pomodoro Timer</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ── Header ──────────────────────────────────────────── -->
+  <header>
+    <h1 id="session-label">Focus</h1>
+    <div id="session-dots" aria-label="Completed pomodoros this cycle"></div>
+  </header>
+
+  <!-- ── Timer ring ──────────────────────────────────────── -->
+  <main>
+    <div class="ring-wrapper" role="timer" aria-live="off">
+      <svg id="progress-ring" viewBox="0 0 220 220" aria-hidden="true">
+        <circle class="ring-track" cx="110" cy="110" r="96"/>
+        <circle
+          class="ring-progress"
+          id="ring-progress-circle"
+          cx="110" cy="110" r="96"
+        />
+      </svg>
+      <div class="timer-display">
+        <span id="timer-minutes">25</span>
+        <span class="timer-colon">:</span>
+        <span id="timer-seconds">00</span>
+      </div>
+    </div>
+  </main>
+
+  <!-- ── Controls ────────────────────────────────────────── -->
+  <section id="controls" aria-label="Timer controls">
+    <button id="btn-reset"       class="ctrl-btn icon-btn" aria-label="Reset timer">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="1 4 1 10 7 10"/>
+        <path d="M3.51 15a9 9 0 1 0 .49-4.5"/>
+      </svg>
+    </button>
+
+    <button id="btn-start-pause" class="ctrl-btn primary-btn" aria-label="Start timer">
+      Start
+    </button>
+
+    <button id="btn-skip"        class="ctrl-btn icon-btn" aria-label="Skip to next session">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="5 4 15 12 5 20 5 4"/>
+        <line x1="19" y1="5" x2="19" y2="19"/>
+      </svg>
+    </button>
+  </section>
+
+  <!-- ── Settings ────────────────────────────────────────── -->
+  <section id="settings" aria-label="Timer settings">
+    <p class="settings-label">Work interval</p>
+    <div id="duration-picker" role="group" aria-label="Choose work duration"></div>
+
+    <button id="btn-notify-enable" class="notify-btn">
+      Enable Notifications
+    </button>
+  </section>
+
+  <!-- ── iOS install hint ─────────────────────────────────── -->
+  <div id="ios-install-hint" hidden role="status">
+    <div class="hint-content">
+      <span class="hint-icon">&#8679;</span>
+      <p>
+        Tap <strong>Share</strong> then <strong>"Add to Home Screen"</strong>
+        for notification support on iPhone.
+      </p>
+    </div>
+    <button id="ios-hint-close" aria-label="Dismiss">&#x2715;</button>
+  </div>
+
+  <!-- ── Toast container (injected by JS) ─────────────────── -->
+  <script src="app.js" type="module"></script>
+</body>
+</html>

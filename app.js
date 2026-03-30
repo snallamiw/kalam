@@ -192,6 +192,33 @@ function transitionTo(session) {
   render();
 }
 
+// ── Audio chime ──────────────────────────────────────────────
+// Plays a short chime using Web Audio API — no permission needed,
+// works even when the app is in the foreground.
+
+function playChime() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const notes = [880, 1100, 1320]; // A5 C#6 E6 — a bright ascending triad
+    notes.forEach((freq, i) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      const start = ctx.currentTime + i * 0.18;
+      gain.gain.setValueAtTime(0, start);
+      gain.gain.linearRampToValueAtTime(0.4, start + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.6);
+      osc.start(start);
+      osc.stop(start + 0.65);
+    });
+  } catch {
+    // AudioContext not available — silent fail
+  }
+}
+
 // ── Notifications ────────────────────────────────────────────
 
 async function requestNotificationPermission() {
@@ -204,6 +231,7 @@ async function requestNotificationPermission() {
 
   if (permission === 'granted') {
     syncNotifyButton();
+    playChime();
     sendNotification('test');
   } else if (permission === 'denied') {
     syncNotifyButton();
@@ -233,24 +261,34 @@ function syncNotifyButton() {
   }
 }
 
-function sendNotification(sessionType) {
-  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+async function sendNotification(sessionType) {
   const msg = NOTIFICATION_MESSAGES[sessionType];
   if (!msg) return;
 
-  if (navigator.serviceWorker?.controller) {
-    // Preferred: show from service worker so it survives tab backgrounding
-    navigator.serviceWorker.controller.postMessage({
-      type: 'SHOW_NOTIFICATION',
-      payload: msg,
-    });
-  } else {
-    // Fallback: direct notification (works on desktop, limited on mobile)
-    new Notification(msg.title, {
-      body: msg.body,
-      icon: './icons/icon-192.png',
-      tag:  'pomodoro-timer',
-    });
+  // Always play audio — works in foreground, no permission needed
+  if (sessionType !== 'test') playChime();
+
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+  try {
+    if ('serviceWorker' in navigator) {
+      // Use serviceWorker.ready — always resolves to the active registration,
+      // unlike .controller which is null on first page load
+      const reg = await navigator.serviceWorker.ready;
+      await reg.showNotification(msg.title, {
+        body:              msg.body,
+        icon:              './icons/icon-192.png',
+        badge:             './icons/icon-192.png',
+        tag:               'pomodoro-timer',
+        renotify:          true,
+        requireInteraction: false,
+      });
+    } else {
+      new Notification(msg.title, { body: msg.body, icon: './icons/icon-192.png' });
+    }
+  } catch {
+    // Fallback if SW registration fails
+    try { new Notification(msg.title, { body: msg.body }); } catch { /* silent */ }
   }
 }
 

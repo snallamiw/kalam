@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pomodoro-v5';
+const CACHE_NAME = 'pomodoro-v6';
 const APP_SHELL = [
   './',
   './index.html',

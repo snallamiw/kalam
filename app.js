@@ -154,9 +154,10 @@ function onSessionEnd(autoStart = false) {
   clearInterval(state.intervalId);
   state.intervalId = null;
   state.isRunning = false;
-  releaseWakeLock();
 
   sendNotification(state.currentSession);
+  // Release wake lock after sound fires, not before
+  setTimeout(releaseWakeLock, 2000);
 
   if (state.currentSession === 'work') {
     state.pomodoroCount++;
@@ -223,7 +224,7 @@ const TUNES = {
       try {
         const ctx = audioCtx();
         [880, 1108, 1320].forEach((freq, i) =>   // A5 C#6 E6
-          note(ctx, freq, 'sine', ctx.currentTime + i * 0.18, 0.7));
+          note(ctx, freq, 'sine', ctx.currentTime + i * 0.18, 0.7, 0.6));
       } catch { /* silent */ }
     },
   },

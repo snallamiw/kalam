@@ -454,6 +454,33 @@ function saveTunePreference() {
   localStorage.setItem(TUNE_STORAGE_KEY, state.tune);
 }
 
+// ── Speech ───────────────────────────────────────────────────
+
+function speakTime() {
+  if (!('speechSynthesis' in window)) return;
+
+  const m = Math.floor(state.remainingSeconds / 60);
+  const s = state.remainingSeconds % 60;
+
+  let text;
+  if (state.remainingSeconds === 0) {
+    text = `${SESSION_LABELS[state.currentSession]} session complete.`;
+  } else if (m > 0 && s > 0) {
+    text = `${m} ${m === 1 ? 'minute' : 'minutes'} and ${s} ${s === 1 ? 'second' : 'seconds'} remaining.`;
+  } else if (m > 0) {
+    text = `${m} ${m === 1 ? 'minute' : 'minutes'} remaining.`;
+  } else {
+    text = `${s} ${s === 1 ? 'second' : 'seconds'} remaining.`;
+  }
+
+  window.speechSynthesis.cancel(); // stop any current speech before speaking
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.rate   = 1;
+  utterance.pitch  = 1;
+  utterance.volume = 1;
+  window.speechSynthesis.speak(utterance);
+}
+
 // ── Toast ────────────────────────────────────────────────────
 
 function showToast(message) {
@@ -527,6 +554,12 @@ function bindEvents() {
     if (!document.hidden && state.isRunning && !state.wakeLock) {
       acquireWakeLock();
     }
+  });
+
+  // Tap anywhere (non-interactive area) to hear the current time
+  document.addEventListener('click', e => {
+    const interactive = e.target.closest('button, a, input, select');
+    if (!interactive) speakTime();
   });
 
   // Keyboard shortcuts
